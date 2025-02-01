@@ -21,3 +21,7 @@ Versión 0.6
 Agregamos SignUp
 Agregamos UserConfig
 Agregamos AboutUs
+
+Version 0.8
+Agregamos contact us 
+Agregamos add product
