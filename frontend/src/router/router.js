@@ -5,10 +5,11 @@ import { createRouter, createWebHistory } from 'vue-router'      //Librería par
 import UserProducts from '../UserProducts.vue'
 import UrList from '../UrList.vue'
 import AddProduct from '../AddProduct.vue'
-import UserLogin from '../UserLogin.vue'
+import AboutUs from '../AboutUs.vue'
 import SignUp from '../SignUp.vue'
 import UserConfig from '../UserConfig.vue'
 import ContactUs from '../ContactUs.vue'
+import Home from '../home.vue'
 
 
 const routes = [
@@ -16,7 +17,7 @@ const routes = [
   //Definimos la página principal de la aplicación
   {
     path: '/',
-    redirect: '/products', // Redirige automáticamente a /products
+    redirect: '/home', // Redirige automáticamente a /products
   },
 
   //Definimos las rutas de las distintas páginas de la aplicación
@@ -24,6 +25,11 @@ const routes = [
     path: '/products',
     name: 'UserProducts',
     component: UserProducts
+  },
+  {
+    path: '/home',
+    name: 'Home',
+    component: Home
   },
   {
     path: '/contact',
@@ -41,9 +47,9 @@ const routes = [
     component: AddProduct
   },
   {
-    path: '/login',
-    name: 'UserLogin',
-    component: UserLogin
+    path: '/about',
+    name: 'AboutUs',
+    component: AboutUs
   },
   {
     path: '/signup',

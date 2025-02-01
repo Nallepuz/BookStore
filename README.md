@@ -8,3 +8,10 @@ Aplicando el framework Vue.js en el proyecto.
 Conexión Frontend-Backend.
 Creación de la base de datos.
 Creación del Froontend inicial y la visualización de los datos.
+
+Versión 0.4 :
+
+Agregamos App
+Agregamos Home
+Agregamos Userproducts
+Agregamos router
