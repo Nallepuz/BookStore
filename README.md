@@ -25,3 +25,9 @@ Agregamos AboutUs
 Version 0.8
 Agregamos contact us 
 Agregamos add product
+
+Versión 1.0
+
+Se Agrega Carrito de compra
+Se revisa Backend
+Se revisa codigo final
