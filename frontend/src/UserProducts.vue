@@ -1,27 +1,32 @@
 <template>
   <div id="app">
-    <div class="products-container">
-      <div class="product-card" v-for="item in products" :key="item.name">
-        <img :src="item.image" class="product-image" alt="Product image">
-        <h5 class="product-title">{{ item.name }}</h5>
-        <p class="product-price">{{ item.price }} €</p>
-        <template v-if="isLoggedIn">
-          <div class="buttons-container">
-            <button class="btn btn-warning" @click="addToCart(item)">Add to cart</button>
-            <button class="btn btn-primary" @click="startEditing(item)">Edit</button>
-            <button class="btn btn-danger" @click="deleteProduct(item.name)">Delete</button>
-          </div>
-        </template>
+    <div class="product-admin-container">
+      <div class="product-admin-card" v-for="item in products" :key="item.name">
+        <h5 class="product-admin-title">{{ item.name }}</h5>
+        <img :src="item.image" class="product-admin-image" alt="Product image">
+        <p class="product-admin-price">{{ item.price }} €</p>
 
-        <div v-if="editingProduct?.id === item.id" class="edit-modal">
-          <h5>Editando: {{ editingProduct.name }}</h5>
-          <input type="text" v-model="editingProduct.name" placeholder="Nuevo nombre">
-          <input type="text" v-model="editingProduct.image" placeholder="Nueva URL de la imagen">
-          <input type="number" v-model="editingProduct.price" placeholder="Nuevo precio">
-          <div class="modal-buttons">
-            <button class="btn btn-success" @click="saveEdit">Guardar</button>
-            <button class="btn btn-secondary" @click="cancelEdit">Cancelar</button>
-          </div>
+        <div class="product-admin-buttons">
+          <button v-if="isLoggedIn" class="product-admin-btn-add" @click="addToCart(item)">+</button>
+          <template v-if="isAdmin">
+            <button class="product-admin-btn-edit" @click="startEditing(item)">✎</button>
+            <button class="product-admin-btn-delete" @click="deleteProduct(item.id)">✖</button>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div v-if="editingProduct" class="product-admin-edit-modal">
+      <div class="product-admin-modal-content">
+        <h3>Editing: {{ editingProduct.name }}</h3>
+        <input v-model="editingProduct.name" type="text" placeholder="New book name">
+        <input v-model="editingProduct.image" type="text" placeholder="New image URL">
+        <input v-model.number="editingProduct.price" type="number" placeholder="New book price">
+
+        <div class="product-admin-modal-buttons">
+          <button @click="saveEdit" class="product-admin-btn-save">Save</button>
+          <button @click="cancelEdit" class="product-admin-btn-cancel">Cancel</button>
         </div>
       </div>
     </div>
@@ -29,29 +34,24 @@
 </template>
 
 
-
 <script>
 import axios from 'axios';
 
 export default {
-  name: 'UserProducts',     // Componente para mostrar los productos
   data() {
-
-    // Inicializar los datos
     return {
       products: [],
-      urlist: [], // Lista de productos añadidos al carrito
+      isAdmin: false,
       isLoggedIn: false,
-      editingProduct: null, // Producto en edición
+      editingProduct: null,
     };
   },
   mounted() {
-    this.readProducts();     // Leer los productos
-    this.checkLoginStatus(); // Comprobar estado de sesión
+    this.readProducts();
+    this.checkAdminStatus();
+    this.checkUserLoginStatus();
   },
   methods: {
-
-    // Método para leer los productos
     readProducts() {
       axios
         .get('http://localhost:8081/products')
@@ -62,90 +62,66 @@ export default {
           console.error(error);
         });
     },
-
-    // Método para eliminar un producto
-    deleteProduct(productName) {
-      if (!confirm(`¿Estás seguro de que deseas eliminar el producto "${productName}"?`)) {
+    startEditing(product) {
+      this.editingProduct = { ...product };
+    },
+    cancelEdit() {
+      this.editingProduct = null;
+    },
+    saveEdit() {
+      const { id, name, image, price } = this.editingProduct;
+      if (!name || !image || price <= 0) {
+        alert('Todos los campos deben ser válidos.');
         return;
       }
       axios
-        .delete(`http://localhost:8081/products/${productName}`)
+        .put(`http://localhost:8081/products/${id}`, { name, image, price })
         .then(() => {
-          this.products = this.products.filter((product) => product.name !== productName);
+          alert('Producto actualizado.');
+          this.editingProduct = null;
+          this.readProducts();
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    },
+
+    deleteProduct(productId) {
+      if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) {
+        return;
+      }
+
+      axios
+        .delete(`http://localhost:8081/products/${productId}`)
+        .then(() => {
+          this.products = this.products.filter((product) => product.id !== productId);
           alert('Producto eliminado exitosamente.');
         })
         .catch((error) => {
           console.error('Error al eliminar el producto:', error);
-          alert('Error al eliminar el producto. Por favor, inténtalo de nuevo.');
         });
     },
 
-    // Método para iniciar la edición de un producto
-    startEditing(product) {
-      console.log('Iniciando edición para:', product); // Log del producto seleccionado
-      this.editingProduct = { ...product }; // Clona los datos del producto en edición
+    checkAdminStatus() {
+      const userEmail = localStorage.getItem('userEmail');
+      this.isAdmin = userEmail === 'admin@gmail.com';
     },
 
-    saveEdit() {
-      const { id, name, price, image } = this.editingProduct;
-
-      if (!name || !image || price == null || price <= 0) {
-        alert('Todos los campos deben ser válidos y completos.');
-        return;
-      }
-
-      axios
-        .put(`http://localhost:8081/products/${id}`, { name, price, image }) // Usa el ID
-        .then(() => {
-          this.editingProduct = null;
-          this.readProducts(); // Recargar productos actualizados
-        })
-        .catch((error) => {
-          console.error('Error al guardar edición:', error);
-          alert('Error al actualizar el producto. Inténtalo nuevamente.');
-        });
-    },
-
-    cancelEdit() {
-      this.editingProduct = null; // Cancelar la edición
-    },
-    checkLoginStatus() {
+    checkUserLoginStatus() {
       const userToken = localStorage.getItem('userToken');
-      this.isLoggedIn = !!userToken; // Si hay un token, está logueado
+      this.isLoggedIn = !!userToken;
     },
 
-    // Método para añadir un producto al carrito
     addToCart(product) {
       const userId = localStorage.getItem('userId');
-
       axios
-        .post('http://localhost:8081/cart', {
-          user_id: userId,
-          product_id: product.id,
-        })
-        .then((response) => {
-          console.log('Producto añadido:', response.data.cart); // Muestra el carrito actualizado
+        .post('http://localhost:8081/cart', { user_id: userId, product_id: product.id })
+        .then(() => {
           alert('Producto añadido al carrito.');
-          this.loadCart(); // Cargar el carrito actualizado
+          this.loadCart();
         })
         .catch((error) => {
-          console.error('Error al añadir producto al carrito:', error.response?.data || error.message);
-          alert('Error al añadir producto al carrito.');
-        });
-    },
-
-    loadCart() {
-      const userId = localStorage.getItem('userId'); // Obtén el ID del usuario logueado
-
-      axios
-        .get(`http://localhost:8081/cart/${userId}`)
-        .then((response) => {
-          this.cart = response.data; // Actualiza los productos en el carrito
-          console.log('Carrito cargado:', this.cart); // Verifica los datos en la consola
-        })
-        .catch((error) => {
-          console.error('Error al cargar el carrito:', error);
-          alert('Error al cargar el carrito.');
+          console.error('Error al añadir el producto al carrito:', error);
         });
     },
   },
@@ -156,83 +132,162 @@ export default {
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   color: #b3b8bd;
-  background-color: #272727;
-  padding: 20px;
+  padding: 100px 20px;
 }
 
-.products-container {
+.product-admin-container {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 20px;
+  gap: 30px;
+  padding-top: 40px;
+  padding-bottom: 40px;
 }
 
-.product-card {
-  background-color: #3e3f41;
+.product-admin-card {
+  background-color: #f5f5dc;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.3);
-  width: 300px;
+  width: 250px;
   text-align: center;
 }
 
-.product-image {
-  width: 60%;
-  height: 230px;
+.product-admin-title {
+  font-size: 1.3em;
+  color: #333;
+  min-height: 50px;
+  margin-bottom: 10px;
+}
+
+.product-admin-image {
+  width: 100%;
+  height: 320px;
   object-fit: cover;
-  border-radius: 8px;
-}
-
-.product-title {
-  font-size: 1.5em;
-  margin: 10px 0;
-  color: #fff;
-}
-
-.product-price {
-  font-size: 1.2em;
-  color: #ffcc00;
-}
-
-.buttons-container {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 10px;
-}
-
-button {
-  padding: 8px 12px;
-  border: none;
   border-radius: 4px;
+}
+
+.product-admin-price {
+  font-size: 1.1em;
+  color: #b19114;
+  margin: 10px 0;
+}
+
+.product-admin-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  margin-top: 15px;
+}
+
+.product-admin-btn-add {
+  width: 50px;
+  height: 50px;
+  background-color: #0b3f7a;
+  border: none;
+  border-radius: 50%;
   cursor: pointer;
-}
-
-.btn-warning {
-  background-color: #4ed8f0;
+  font-size: 1.5em;
   color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.btn-primary {
-  background-color: #0275d8;
+.product-admin-btn-edit {
+  width: 50px;
+  height: 50px;
+  background-color: #076e0c;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.5em;
   color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.btn-danger {
-  background-color: #b42621;
+.product-admin-btn-delete {
+  width: 50px;
+  height: 50px;
+  background-color: #85110d;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.5em;
   color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.edit-modal {
-  margin-top: 20px;
+.product-admin-btn-add:hover,
+.product-admin-btn-edit:hover,
+.product-admin-btn-delete:hover {
+  filter: brightness(1.2);
+}
+
+/* Ventana emergente de edición */
+.product-admin-edit-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #2c2c2c;
   padding: 20px;
-  background-color: #444;
   border-radius: 8px;
-  color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
 }
 
-.modal-buttons {
+.product-admin-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.product-admin-modal-content input {
+  background-color: #1b1b1b;
+  color: #ffffff;
+  border: 1px solid #444;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.product-admin-modal-content input::placeholder {
+  color: #aaaaaa;
+  font-style: italic;
+}
+
+.product-admin-modal-buttons {
   display: flex;
   justify-content: space-between;
   margin-top: 10px;
+}
+
+.product-admin-btn-save,
+.product-admin-btn-cancel {
+  background-color: white;
+  color: black;
+  padding: 12px 20px;
+  border: 2px solid black;
+  border-radius: 4px;
+  font-size: 1.1em;
+  cursor: pointer;
+  font-weight: bold;
+  width: 100px;
+  text-align: center;
+}
+
+.product-admin-btn-save:hover {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.product-admin-btn-cancel:hover {
+  background-color: #f44336;
+  color: white;
 }
 </style>
