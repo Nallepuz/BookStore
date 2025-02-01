@@ -15,3 +15,9 @@ Agregamos App
 Agregamos Home
 Agregamos Userproducts
 Agregamos router
+
+Versión 0.6
+
+Agregamos SignUp
+Agregamos UserConfig
+Agregamos AboutUs

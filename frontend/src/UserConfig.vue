@@ -1,43 +1,43 @@
 <template>
-  <div class="account-options">
-    <h2>Opciones de Cuenta</h2>
-    <div class="options-list">
-      <!-- Cambiar correo electrónico -->
-      <div class="option-item">
-        <button @click="toggleOption('changeEmail')">Cambiar correo electrónico</button>
-        <div v-if="selectedOption === 'changeEmail'" class="option-form">
-          <h3>Cambiar correo electrónico</h3>
-          <input type="email" v-model="newEmail" placeholder="Nuevo correo electrónico" />
-          <div class="buttons">
-            <button @click="updateEmail">Guardar</button>
-            <button @click="cancelOption">Cancelar</button>
+  <div class="account-container">
+    <h2>Account Options</h2>
+    <div class="account-options-list">
+      <!-- Change Email -->
+      <div class="account-option-item">
+        <button @click="toggleOption('changeEmail')">Change Email</button>
+        <div v-if="selectedOption === 'changeEmail'" class="account-option-form">
+          <h3>Change Email</h3>
+          <input type="email" v-model="newEmail" placeholder="New Email" class="account-input-field" />
+          <div class="account-buttons">
+            <button @click="updateEmail" class="account-btn-success">Save</button>
+            <button @click="cancelOption" class="account-btn-secondary">Cancel</button>
           </div>
         </div>
       </div>
 
-      <!-- Cambiar contraseña -->
-      <div class="option-item">
-        <button @click="toggleOption('changePassword')">Cambiar contraseña</button>
-        <div v-if="selectedOption === 'changePassword'" class="option-form">
-          <h3>Cambiar contraseña</h3>
-          <input type="password" v-model="newPassword" placeholder="Nueva contraseña" />
-          <input type="password" v-model="confirmPassword" placeholder="Confirmar nueva contraseña" />
-          <div class="buttons">
-            <button @click="updatePassword">Guardar</button>
-            <button @click="cancelOption">Cancelar</button>
+      <!-- Change Password -->
+      <div class="account-option-item">
+        <button @click="toggleOption('changePassword')">Change Password</button>
+        <div v-if="selectedOption === 'changePassword'" class="account-option-form">
+          <h3>Change Password</h3>
+          <input type="password" v-model="newPassword" placeholder="New Password" class="account-input-field" />
+          <input type="password" v-model="confirmPassword" placeholder="Confirm New Password" class="account-input-field" />
+          <div class="account-buttons">
+            <button @click="updatePassword" class="account-btn-success">Save</button>
+            <button @click="cancelOption" class="account-btn-secondary">Cancel</button>
           </div>
         </div>
       </div>
 
-      <!-- Eliminar cuenta -->
-      <div class="option-item">
-        <button @click="toggleOption('deleteAccount')">Eliminar cuenta</button>
-        <div v-if="selectedOption === 'deleteAccount'" class="option-form">
-          <h3>¿Estás seguro de eliminar tu cuenta?</h3>
-          <p>Esta acción no se puede deshacer.</p>
-          <div class="buttons">
-            <button @click="deleteAccount">Eliminar</button>
-            <button @click="cancelOption">Cancelar</button>
+      <!-- Delete Account -->
+      <div class="account-option-item">
+        <button @click="toggleOption('deleteAccount')" class="account-btn-danger">Delete Account</button>
+        <div v-if="selectedOption === 'deleteAccount'" class="account-option-form">
+          <h3>Are you sure you want to delete your account?</h3>
+          <p>This action cannot be undone.</p>
+          <div class="account-buttons">
+            <button @click="deleteAccount" class="account-btn-danger">Delete</button>
+            <button @click="cancelOption" class="account-btn-secondary">Cancel</button>
           </div>
         </div>
       </div>
@@ -45,282 +45,201 @@
   </div>
 </template>
 
+
 <script>
+import axios from 'axios';
 
 export default {
   data() {
     return {
-      selectedOption: null, // Opción seleccionada
-      newEmail: "", // Nuevo correo
-      newPassword: "", // Nueva contraseña
-      confirmPassword: "", // Confirmación de contraseña
+      selectedOption: null,
+      newEmail: "",
+      newPassword: "",
+      confirmPassword: "",
     };
   },
   methods: {
-    // Alterna entre las opciones
     toggleOption(option) {
       this.selectedOption = this.selectedOption === option ? null : option;
     },
-    // Resetea los campos y cierra el formulario
     cancelOption() {
       this.selectedOption = null;
       this.newEmail = "";
       this.newPassword = "";
       this.confirmPassword = "";
     },
-    // Actualiza el correo electrónico
+
     async updateEmail() {
+      const userId = localStorage.getItem('userId');
+      if (!this.newEmail) {
+        alert("Por favor, ingresa un nuevo correo electrónico.");
+        return;
+      }
       try {
-        // Expresión regular para validar correos electrónicos
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        // Validar que el campo no esté vacío
-        if (!this.newEmail) {
-          alert("Por favor, introduce un nuevo correo electrónico.");
-          return;
-        }
-
-        // Validar que el correo electrónico sea válido
-        if (!emailRegex.test(this.newEmail)) {
-          alert("Por favor, introduce un correo electrónico válido.");
-          return;
-        }
-
-        const user_id = localStorage.getItem("userId");
-        const response = await fetch("http://localhost:8081/update-email", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id, email: this.newEmail }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          alert(data.message || "Correo electrónico actualizado correctamente.");
-
-          // Actualizar el email en el estado global
-          localStorage.setItem("userEmail", this.newEmail);
-          this.$root.userEmail = this.newEmail;
-
-          // Recargar la página
-          window.location.reload();
-        } else {
-          alert(data.message || "Error al actualizar el correo electrónico.");
-        }
+        await axios.put('http://localhost:8081/update-email', { user_id: userId, email: this.newEmail });
+        alert("Correo electrónico actualizado con éxito.");
+        localStorage.setItem('userEmail', this.newEmail);
+        window.dispatchEvent(new CustomEvent('email-updated', { detail: this.newEmail }));
       } catch (error) {
-        console.error(error);
-        alert("Error al actualizar el correo electrónico.");
+        console.error("Error al actualizar el correo:", error);
+        alert("Hubo un error al actualizar el correo.");
       }
     },
 
-    // Actualiza la contraseña
     async updatePassword() {
+      const userId = localStorage.getItem('userId');
+      if (!this.newPassword || this.newPassword !== this.confirmPassword) {
+        alert("Las contraseñas no coinciden o están vacías.");
+        return;
+      }
       try {
-        if (!this.newPassword || !this.confirmPassword) {
-          alert("Por favor, introduce y confirma la nueva contraseña.");
-          return;
-        }
-        if (this.newPassword !== this.confirmPassword) {
-          alert("Las contraseñas no coinciden. Por favor, inténtalo nuevamente.");
-          return;
-        }
-
-        const user_id = localStorage.getItem("userId"); // Obtén el ID del usuario desde localStorage
-        const response = await fetch("http://localhost:8081/update-password", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_id,
-            password: this.newPassword,
-          }),
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-          alert("Contraseña actualizada correctamente. Serás redirigido a la página de login.");
-          // Desloguear al usuario
-          localStorage.removeItem("userToken");
-          localStorage.removeItem("userEmail");
-          localStorage.removeItem("userId");
-          this.$router.push("/login"); // Redirigir al login
-        } else {
-          alert(data.message || "Error al actualizar la contraseña.");
-        }
+        await axios.put('http://localhost:8081/update-password', { user_id: userId, password: this.newPassword });
+        alert("Contraseña actualizada con éxito.");
+        localStorage.clear();
+        window.location.href = '/';
       } catch (error) {
         console.error("Error al actualizar la contraseña:", error);
-        alert("Error al actualizar la contraseña.");
+        alert("Hubo un error al actualizar la contraseña.");
       }
     },
-    // Elimina la cuenta
+
     async deleteAccount() {
-      try {
-        const confirmed = confirm("¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.");
-        if (!confirmed) return;
-
-        const user_id = localStorage.getItem("userId"); // Obtén el ID del usuario desde localStorage
-        const response = await fetch("http://localhost:8081/delete-account", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          alert("Cuenta eliminada correctamente. Serás redirigido a la página principal.");
-
-          // Desloguear al usuario
-          localStorage.removeItem("userToken");
-          localStorage.removeItem("userEmail");
-          localStorage.removeItem("userId");
-
-          // Actualiza el estado global
-          this.$root.isLoggedIn = false;
-          this.$root.userEmail = "";
-
-          // Redirigir a la página principal
-          this.$router.push("/products");
-        } else {
-          alert(data.message || "Error al eliminar la cuenta.");
+      const userId = localStorage.getItem('userId');
+      if (confirm("¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer.")) {
+        try {
+          await axios.delete('http://localhost:8081/delete-account', { data: { user_id: userId } });
+          alert("Cuenta eliminada con éxito.");
+          localStorage.clear();
+          window.location.href = '/';
+        } catch (error) {
+          console.error("Error al eliminar la cuenta:", error);
+          alert("Hubo un error al eliminar la cuenta.");
         }
-      } catch (error) {
-        console.error("Error al eliminar la cuenta:", error);
-        alert("Error al eliminar la cuenta.");
       }
     },
-
   },
 };
 </script>
 
+<style>
+body {
+  font-family: 'Arial, sans-serif';
+  background-color: #1E3A8A;
+  margin: 0;
+  padding: 0;
+}
 
-<style scoped>
-.account-options {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  /* Para que ocupe toda la pantalla */
-  padding: 20px;
-  background-color: #272727;
+.account-container {
+  background-color: #1b2735;
+  padding: 40px;
+  border-radius: 12px;
+  max-width: 800px;
+  margin: 50px auto;
+  box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.5);
+  text-align: center;
 }
 
 h2 {
-  margin-bottom: 20px;
+  color: #ffda44;
   font-size: 2rem;
-  color: #fffcfc;
+  margin-bottom: 30px;
 }
 
-.options-list {
-  width: 100%;
-  max-width: 600px;
+.account-options-list {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.option-item {
-  background: #272727;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+.account-option-item {
+  background: #243447;
   padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  border-radius: 10px;
+  transition: transform 0.2s ease;
 }
 
-.option-item button {
+.account-option-item:hover {
+  transform: scale(1.02);
+}
+
+.account-option-item button {
   width: 100%;
-  padding: 12px;
-  font-size: 1rem;
+  padding: 14px;
+  font-size: 1.1rem;
   font-weight: bold;
-  color: #fff;
   border: none;
   border-radius: 8px;
+  color: white;
   cursor: pointer;
-  background-color: #007bff;
-  transition: background-color 0.3s ease;
+  background-color: #445466;
 }
 
-.option-item button:hover {
-  background-color: #0056b3;
+.account-option-item button.account-btn-danger {
+  background-color: #b22222;
 }
 
-.option-item button.danger {
-  background-color: #dc3545;
+.account-option-item button:hover {
+  filter: brightness(1.2);
 }
 
-.option-item button.danger:hover {
-  background-color: #a71d2a;
+.account-option-form {
+  margin-top: 15px;
+  text-align: left;
 }
 
-.option-form {
-  margin-top: 20px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.option-form h3 {
-  font-size: 1.5rem;
-  color: #555;
-  text-align: center;
-}
-
-.input-field {
+.account-input-field {
   width: 100%;
   padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: 5px;
+  border: 1px solid #444;
+  background-color: #1a1a1a;
+  color: #ffffff;
   font-size: 1rem;
 }
 
-.buttons {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
+.account-input-field::placeholder {
+  color: #aaaaaa;
+  font-style: italic;
 }
 
-.buttons button {
+.account-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+}
+
+.account-buttons button {
   flex: 1;
   padding: 10px;
   font-size: 1rem;
-  font-weight: bold;
+  margin-right: 10px;
   border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
 }
 
-.buttons button.btn-success {
+.account-btn-success {
   background-color: #28a745;
-  color: #fff;
-  border: none;
+  color: white;
 }
 
-.buttons button.btn-success:hover {
+.account-btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.account-btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.account-btn-success:hover {
   background-color: #218838;
 }
 
-.buttons button.btn-secondary {
-  background-color: #6c757d;
-  color: #fff;
-  border: none;
-}
-
-.buttons button.btn-secondary:hover {
+.account-btn-secondary:hover {
   background-color: #5a6268;
 }
 
-.buttons button.btn-danger {
-  background-color: #dc3545;
-  color: #fff;
-  border: none;
-}
-
-.buttons button.btn-danger:hover {
+.account-btn-danger:hover {
   background-color: #a71d2a;
 }
 </style>
